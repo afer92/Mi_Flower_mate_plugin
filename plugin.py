@@ -41,6 +41,7 @@ class BasePlugin:
 
 	def __init__(self): 
 		self.macs = []
+		self.filtered = [] # scan failed mac
 		self.currentlyPolling = 100
 		return 
 
@@ -97,8 +98,17 @@ class BasePlugin:
 		  
 	
 	def onHeartbeat(self):
+		# new scan if new device or if a device reappears
+		if( self.currentlyPolling == 0 ):
+			if Parameters["Mode1"] == 'auto':
+				self.floraScan()
 		# for now this uses the shelve database as its source of truth.
 		if( self.currentlyPolling < len(self.macs) ):
+			# skip filtered device
+			if self.macs[self.currentlyPolling] in self.filtered:
+				self.currentlyPolling = self.currentlyPolling + 1
+				return
+			# get plant data
 			try:
 				self.getPlantData(int(self.currentlyPolling))
 				if( self.currentlyPolling == len(self.macs) - 1 ):
@@ -213,6 +223,8 @@ class BasePlugin:
 		#databaseFile=os.path.join(os.environ['HOME'],'XiaomiMiFlowerMates')
 		# first, let's get the list of devices we already know about
 		database = shelve.open('XiaomiMiMates')
+		database['filter'] = []
+		filtered = database['filter']
 		
 		try:
 			knownSensors = database['macs']
@@ -232,7 +244,13 @@ class BasePlugin:
 		except:
 			foundFloras = []
 			Domoticz.Log("Scan failed")
-			
+
+		# set ignored devices
+		for sensor in knownSensors:
+			if sensor not in foundFloras:
+				filtered.append(str(sensor))
+		database['filter'] = filtered
+
 		for sensor in foundFloras:
 			if sensor not in knownSensors:
 				knownSensors.append(str(sensor))
