@@ -45,16 +45,17 @@ try:
 except:
     bluepyError = 1
 
+
 class BasePlugin:
 
     def __init__(self):
         self.macs = []
-        self.filtered = [] # scan failed mac
+        self.filtered = []  # scan failed mac
         self.currentlyPolling = 100
         return
 
     def onStart(self):
-        #Domoticz.Debugging(1)
+        # Domoticz.Debugging(1)
         if fake:
             from fakeDomoticz import Devices
 
@@ -64,13 +65,12 @@ class BasePlugin:
         if bluepyError == 1:
             Domoticz.Error("Error loading Flora libraries")
 
-
         Domoticz.Debug("Mi Flora - devices made so far (max 255): " + str(len(Devices)))
 
         # create master toggle switch
         if 1 not in Devices:
             Domoticz.Log("Creating the master Mi Flower Mate poll switch. Flip it to poll the sensors.")
-            #Domoticz.Device(Name="push to update Mi Flowermates", Unit=1, Type=17, Switchtype=9, Used=1).Create()
+            # Domoticz.Device(Name="push to update Mi Flowermates", Unit=1, Type=17, Switchtype=9, Used=1).Create()
             Domoticz.Device(Name="update Mi Flowermates",  Unit=1, Type=17,  Switchtype=9, Used=1).Create()
 
         # get the mac addresses of the sensors
@@ -81,9 +81,9 @@ class BasePlugin:
             Domoticz.Log("Manual mode is selected")
             self.macs = parseCSV(Parameters["Mode2"])
             self.createSensors()
-        #Domoticz.Log("macs = {}".format(self.macs))
+        # Domoticz.Log("macs = {}".format(self.macs))
 
-        #Devices[Unit].Update(nValue=1,sValue="Off")
+        # Devices[Unit].Update(nValue=1,sValue="Off")
 
     def onStop(self):
         Domoticz.Log("onStop called")
@@ -95,27 +95,26 @@ class BasePlugin:
         Domoticz.Log("onMessage called")
 
     def onCommand(self, Unit, Command, Level, Hue):
-        #Domoticz.Log("onCommand called for Unit " + str(Unit) + ": Parameter '" + str(Command) + "', Level: " + str(Level))
+        # Domoticz.Log("onCommand called for Unit " + str(Unit) + ": Parameter '" + str(Command) + "', Level: " + str(Level))
 
-        Domoticz.Log("amount of Flower Mates to now ask for data: " + str(len(self.macs)) )
+        Domoticz.Log("amount of Flower Mates to now ask for data: " + str(len(self.macs)))
 
         # flip the switch icon, and then get the plant data.
         if Unit == 1:
-            #Devices[Unit].Update(nValue=1,sValue="Off") # best to always turn it off I guess.
+            # Devices[Unit].Update(nValue=1,sValue="Off") # best to always turn it off I guess.
 
-            #By setting this to 0, the polling function will run.
+            # By setting this to 0, the polling function will run.
             self.currentlyPolling = 0
-
 
     def onHeartbeat(self):
         if fake:
             from fakeDomoticz import Devices
         # new scan if new device or if a device reappears
-        if( self.currentlyPolling == 0 ):
+        if(self.currentlyPolling == 0):
             if Parameters["Mode1"] == 'auto':
                 self.floraScan()
         # for now this uses the shelve database as its source of truth.
-        if( self.currentlyPolling < len(self.macs) ):
+        if(self.currentlyPolling < len(self.macs)):
             # skip filtered device
             if self.macs[self.currentlyPolling] in self.filtered:
                 self.currentlyPolling = self.currentlyPolling + 1
@@ -123,14 +122,14 @@ class BasePlugin:
             # get plant data
             try:
                 self.getPlantData(int(self.currentlyPolling))
-                if( self.currentlyPolling == len(self.macs) - 1 ):
-                    Devices[1].Update(nValue=0,sValue="Off")
+                if(self.currentlyPolling == len(self.macs) - 1):
+                    Devices[1].Update(nValue=0, sValue="Off")
             except:
                 pass
             self.currentlyPolling = self.currentlyPolling + 1
 
-
     # function to create corresponding sensors in Domoticz if there are Mi Flower Mates which don't have them yet.
+
     def createSensors(self):
         if fake:
             from fakeDomoticz import Devices
@@ -142,7 +141,7 @@ class BasePlugin:
                 Domoticz.Debug("Creating new sensors for Mi Flower Mate at "+str(mac))
                 sensorBaseName = "#" + str(idx) + " "
 
-                #moisture
+                # moisture
 
                 sensorNumber = (idx*4) + 2
                 if sensorNumber not in Devices:
@@ -156,46 +155,43 @@ class BasePlugin:
                     # print(Devices)
                     Domoticz.Log("Created device: "+Devices[sensorNumber].Name)
 
-                    #temperature
+                    # temperature
 
                     sensorNumber = (idx*4) + 3
                     sensorName = sensorBaseName + "Temperature"
                     Domoticz.Device(Name=sensorName, Unit=sensorNumber, TypeName="Temperature", Used=1).Create()
                     Domoticz.Log("Created device: "+Devices[sensorNumber].Name)
 
-                    #light
+                    # light
 
                     sensorNumber = (idx*4) + 4
                     sensorName = sensorBaseName + "Light"
                     Domoticz.Device(Name=sensorName, Unit=sensorNumber, TypeName="Illumination", Used=1).Create()
                     Domoticz.Log("Created device: "+Devices[sensorNumber].Name)
 
-                    #fertility
+                    # fertility
 
                     sensorNumber = (idx*4) + 5
                     sensorName = sensorBaseName + "Conductivity"
                     Domoticz.Device(Name=sensorName, Unit=sensorNumber, TypeName="Custom", Used=1).Create()
                     Domoticz.Log("Created device: "+Devices[sensorNumber].Name)
 
-
     # function to poll a Flower Mate for its data
     def getPlantData(self, idx):
         if fake:
             from fakeDomoticz import Devices
-        #for idx, mac in enumerate(self.macs):
+        # for idx, mac in enumerate(self.macs):
         mac = self.macs[idx]
         Domoticz.Log("getting data from sensor: "+str(mac))
         try:
             poller = MiFloraPoller(str(mac), BluepyBackend)
             Domoticz.Debug("Firmware: {}".format(poller.firmware_version()))
-            val_bat  = int("{}".format(poller.parameter_value(MI_BATTERY)))
+            val_bat = int("{}".format(poller.parameter_value(MI_BATTERY)))
             nValue = 0
         except:
             Domoticz.Log("poller error")
 
-
-
-        #moisture
+        # moisture
 
         sensorNumber1 = (idx*4) + 2
         try:
@@ -206,7 +202,7 @@ class BasePlugin:
         except:
             Domoticz.Log("error getting moisture data")
 
-        #temperature
+        # temperature
 
         sensorNumber2 = (idx*4) + 3
         try:
@@ -216,7 +212,7 @@ class BasePlugin:
         except:
             Domoticz.Log("error getting temperature data")
 
-        #light
+        # light
 
         sensorNumber3 = (idx*4) + 4
         try:
@@ -226,7 +222,7 @@ class BasePlugin:
         except:
             Domoticz.Log("error getting light data")
 
-        #fertility
+        # fertility
 
         sensorNumber4 = (idx*4) + 5
         try:
@@ -242,7 +238,7 @@ class BasePlugin:
             from fakeDomoticz import Devices
         Domoticz.Log("Scanning for Mi Flower Mate sensors")
 
-        #databaseFile=os.path.join(os.environ['HOME'],'XiaomiMiFlowerMates')
+        # databaseFile=os.path.join(os.environ['HOME'],'XiaomiMiFlowerMates')
         # first, let's get the list of devices we already know about
         database = shelve.open('XiaomiMiMates')
         database['filter'] = []
@@ -256,10 +252,10 @@ class BasePlugin:
         except:
             knownSensors = []
             database['macs'] = knownSensors
-            oldLength = 0;
+            oldLength = 0
             Domoticz.Debug("No existing sensors in system?")
 
-        #Next we scan to look for new sensors
+        # Next we scan to look for new sensors
         try:
             foundFloras = miflora_scanner.scan(BluepyBackend, 3)
             Domoticz.Log("Number of devices found via bluetooth scan = " + str(len(foundFloras)))
@@ -326,7 +322,7 @@ if __name__ == "__main__":
     import fakeDomoticz
     from TestCode import runtest
     from TestCode import Parameters
-    
+
     Devices = fakeDomoticz.Devices
 
     runtest(_plugin)

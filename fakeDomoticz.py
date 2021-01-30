@@ -18,6 +18,7 @@ Images = {}
 dbHistory = 'miflora'
 DEBUG = False
 
+
 def Log(s):
     print(s)
 
@@ -120,6 +121,14 @@ class Device:
         self._typeName = value
 
     @property
+    def BatteryLevel(self):
+        return self._batteryLevel
+
+    @BatteryLevel.setter
+    def BatteryLevel(self, value):
+        self._batteryLevel = value
+
+    @property
     def Type(self):
         return self._type
 
@@ -152,7 +161,7 @@ class Device:
         self._used = value
 
     def __init__(self, Name="", Unit=0, TypeName="", Used=0, Type=0,
-                 Switchtype=0, Subtype=0, Image="" , Options=""):
+                 Switchtype=0, Subtype=0, Image="", Options=""):
         self._nValue = 0
         self._sValue = ''
         self._batteryLevel = 0
@@ -188,10 +197,10 @@ class Device:
 
     def __str__(self):
         text2return = u'Name: {} Unit: {} Type: {} TypeName: {} Subtype: {} Options: {}\n'
-        text2return += u'nValue: {} sValue: {} Image: {}'
+        text2return += u'nValue: {} sValue: {} Image: {} BatteryLevel: {}'
         return text2return.format(self._name, self._unit, self._type, self._typeName,
                                   self._subtype, self._options,
-                                  self._nValue, self._sValue, self._image)
+                                  self._nValue, self._sValue, self._image, self._batteryLevel)
 
     def Create(self):
         global Devices
